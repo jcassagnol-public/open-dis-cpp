@@ -29,6 +29,7 @@ namespace DIS
       PDU_EVENT_REPORT = 21,
       PDU_COMMENT = 22,
       PDU_ELECTRONIC_EMMISIONS = 23,
+      PDU_ELECTRONIC_EMISSIONS = 23,
       PDU_DESIGNATOR = 24,
       PDU_TRANSMITTER = 25,
       PDU_SIGNAL = 26,
@@ -53,7 +54,25 @@ namespace DIS
       PDU_AREAL_OBJECT_STATE = 45,
       PDU_TSPI = 46,
       PDU_APPEARANCE = 47,
-      PDU_ARTICULATED_PARTS = 48
+      PDU_ARTICULATED_PARTS = 48,
+      // "reliable" PDUs.
+      PDU_CREATE_ENTITY_R = 51,
+      PDU_REMOVE_ENTITY_R = 52,
+      PDU_START_RESUME_R = 53,
+      PDU_STOP_FREEZE_R = 54,
+      PDU_ACKNOWLEDGE_R = 55,
+      PDU_ACTION_REQUEST_R = 56,
+      PDU_ACTION_RESPONSE_R = 57,
+      PDU_DATA_QUERY_R = 58,
+      PDU_SET_DATA_R = 59,
+      PDU_DATA_R = 60,
+      PDU_EVENT_REPORT_R = 61,
+      PDU_COMMENT_R = 62,
+      PDU_RECORD_QUERY_R = 63,
+      PDU_SET_RECORD_R = 64,
+      // back to normal pdus again!
+      PDU_COLLISION_ELASTIC = 66,
+      PDU_ENTITY_STATE_UPDATE = 67
    };
 }
 
