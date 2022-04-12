@@ -12,6 +12,10 @@
 #include <dis6/msLibMacro.h>         // for library symbols
 #include <utils/PDUType.h>
 
+#include <utils/Dis6Bank.h>
+
+#include <boost/asio.hpp>
+
 namespace DIS
 {
    class Pdu;
@@ -55,7 +59,68 @@ namespace DIS
       PduBankContainer& GetPduBanks();
       const PduBankContainer& GetPduBanks() const;
 
+      /**
+       * @brief Does the same thing as Process but with a static callback to an object that takes a Pdu* instead of the dynamic processor dispatch.
+       * 
+       * @tparam callback the function to process the resulting PDU with.
+       * @tparam logger the function to use to log with. Will send a nlohmann json message. Will be called on deserialize errors.
+       * @param buf the buffer from the network.
+       * @param size the size of the buffer.
+       * @param e the endianness of the platform.
+       */
+      template<typename callback, typename logger>
+      void StaticCallbackProcess(const boost::asio::const_buffer &buf, unsigned int size, Endian e, callback function, logger logFunc)
+      {
+         if (size < PDU_TYPE_POSITION)
+         {
+            return;
+         }
+
+         try
+         {
+            DataStream ds(static_cast<const char*>(buf.data()), size, e);
+
+            while (ds.GetReadPos() < ds.size() - PDU_TYPE_POSITION)
+            {
+               unsigned char pdu_type = ds[PDU_TYPE_POSITION];
+               Pdu* constructor = Dis6Bank::GetStaticPDU(static_cast<DIS::PDUType>(pdu_type));
+               if (!constructor)
+               {
+                  return;
+               }
+               constructor->unmarshal(ds);
+               function(constructor);
+               auto current_stream_pos = ds.GetReadPos();
+               // increment the pointer for padding -> DIS PDUs are padded on an 8 byte boundrey
+               auto padding_required = current_stream_pos % 8;
+
+               // size check to prevent overflow reads
+               if ((ds.size() <= current_stream_pos + padding_required) || (current_stream_pos + padding_required < current_stream_pos))
+               {
+                  return;
+               }
+               
+               while (padding_required)
+               {
+                  char unused_padding;
+                  ds >> unused_padding;
+                  padding_required--;
+               }
+            }
+         }
+         catch (const std::exception& e)
+         {
+            nlohmann::json log_message = {
+               {"exception", e.what()},
+               {"buffer_len", size}
+            };
+            logFunc(log_message);
+         }
+      }
+
    private:
+      // the DIS specification says the type is known for all PDUs at the 3rd byte of the PDU buffer.
+      static constexpr unsigned int PDU_TYPE_POSITION = 2;
       typedef std::pair<PacketProcessorContainer::iterator, PacketProcessorContainer::iterator> PacketProcessIteratorPair;
       PacketProcessorContainer _processors;
       
